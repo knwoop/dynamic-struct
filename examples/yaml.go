@@ -2,11 +2,12 @@ package _examples
 
 import (
 	"fmt"
-	dynamicstruct "github.com/kntaka/dynamic-struct"
-	"gopkg.in/yaml.v2"
 	"log"
 	"reflect"
 	"time"
+
+	dynamicstruct "github.com/knwoop/dynamic-struct"
+	"gopkg.in/yaml.v2"
 )
 
 func getYamlExample() interface{} {

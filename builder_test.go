@@ -115,4 +115,3 @@ func TestBuilderImpl_GetField(t *testing.T) {
 		t.Errorf(`TestBuilder_GetField - expected nil got %#v`, value)
 	}
 }
-

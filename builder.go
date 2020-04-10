@@ -124,7 +124,6 @@ func (f *fieldConfigImpl) SetTag(tag string) Field {
 	return f
 }
 
-func (ds *dynamicStructImpl) New() interface{}  {
+func (ds *dynamicStructImpl) New() interface{} {
 	return reflect.New(ds.definition).Interface()
 }
-
