@@ -1,2 +1,2 @@
-# Golang dynamic struct
+# dynamic struct
 
