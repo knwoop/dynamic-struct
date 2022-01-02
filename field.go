@@ -58,5 +58,6 @@ const (
 
 type Field struct {
 	Name string
-	Type FieldType
+	Type interface{}
+	Tag  string
 }
