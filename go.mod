@@ -1,6 +1,6 @@
 module github.com/knwoop/dynamic-struct
 
-go 1.12
+go 1.17
 
 require (
 	github.com/goccy/go-yaml v1.9.4
