@@ -12,35 +12,39 @@ type DynamicStruct struct {
 	definition reflect.Type
 }
 
-// NewStruct returns new clean instance of Builder interface
+// NewBuilder returns new clean instance of Builder interface
 // builder := dynamicstruct.NewStruct()
-func NewStruct() *Builder {
+func NewBuilder() *Builder {
 	return &Builder{
 		fields: map[string]*Field{},
 	}
 }
 
-// AddField adds
+// AddField adds a field to a struct
 func (b *Builder) AddField(name string, typ interface{}, tag string) *Builder {
 	b.fields[name] = &Field{
-		typ: typ,
-		tag: tag,
+		Name: name,
+		Type: typ,
+		Tag:  tag,
 	}
 
 	return b
 }
 
+// RemoveField deletes a field held in Builder
 func (b *Builder) RemoveField(name string) *Builder {
 	delete(b.fields, name)
-
 	return b
 }
 
+// HasField checks if the field already exists.
 func (b *Builder) HasField(name string) bool {
 	_, ok := b.fields[name]
 	return ok
 }
 
+// GetField gets a field that already exists.
+// If it does not exist, it returns nil.
 func (b *Builder) GetField(name string) *Field {
 	if !b.HasField(name) {
 		return nil
@@ -54,26 +58,12 @@ func (b *Builder) Build() *DynamicStruct {
 	for name, field := range b.fields {
 		structFields = append(structFields, reflect.StructField{
 			Name: name,
-			Type: reflect.TypeOf(field.typ),
-			Tag:  reflect.StructTag(field.tag),
+			Type: reflect.TypeOf(field.Type),
+			Tag:  reflect.StructTag(field.Tag),
 		})
 	}
 
 	return &DynamicStruct{
 		definition: reflect.StructOf(structFields),
 	}
-}
-
-func (f *Field) SetType(typ interface{}) *Field {
-	f.typ = typ
-	return f
-}
-
-func (f *Field) SetTag(tag string) *Field {
-	f.tag = tag
-	return f
-}
-
-func (ds *dynamicStructImpl) New() interface{} {
-	return reflect.New(ds.definition).Interface()
 }
