@@ -1,15 +1,12 @@
 package dynamicstruct
 
-import "reflect"
+import (
+	"reflect"
+)
 
 // Builder builds struct dynamically
 type Builder struct {
 	fields map[string]*Field
-}
-
-// DynamicStruct represents a struct created dynamically by Builder
-type DynamicStruct struct {
-	definition reflect.Type
 }
 
 // NewBuilder returns new clean instance of Builder interface
@@ -54,7 +51,7 @@ func (b *Builder) GetField(name string) *Field {
 
 // Build returns a dynamically created struct
 func (b *Builder) Build() *DynamicStruct {
-	structFields := make([]reflect.StructField, len(b.fields))
+	structFields := make([]reflect.StructField, 0, len(b.fields))
 	for name, field := range b.fields {
 		structFields = append(structFields, reflect.StructField{
 			Name: name,
@@ -66,4 +63,14 @@ func (b *Builder) Build() *DynamicStruct {
 	return &DynamicStruct{
 		definition: reflect.StructOf(structFields),
 	}
+}
+
+// DynamicStruct represents a struct created dynamically by Builder
+type DynamicStruct struct {
+	definition reflect.Type
+}
+
+// New creates dynamic struct
+func (ds *DynamicStruct) New() interface{} {
+	return reflect.New(ds.definition).Interface()
 }
