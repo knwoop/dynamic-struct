@@ -1,4 +1,4 @@
-package _examples
+package examples
 
 import (
 	"fmt"
@@ -6,6 +6,9 @@ import (
 )
 
 func TestExample(t *testing.T) {
-	yml := getYamlExample()
-	fmt.Printf("--- t:\n%v\n\n", yml)
+	out, err := getJSONExample()
+	if err != nil {
+		t.Fatalf("getJSONExample() error: %v", err)
+	}
+	fmt.Printf("--- output:\n%s\n", out)
 }
