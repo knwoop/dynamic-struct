@@ -27,11 +27,11 @@ import (
 )
 
 func main() {
-	// Define the struct
+	// Define the struct using type-specific methods
 	ds, err := dynamicstruct.NewBuilder().
-		AddField("Name", "", `json:"name"`).
-		AddField("Age", 0, `json:"age"`).
-		AddField("Active", false, `json:"active"`).
+		AddStringField("Name", `json:"name"`).
+		AddIntField("Age", `json:"age"`).
+		AddBoolField("Active", `json:"active"`).
 		Build()
 	if err != nil {
 		log.Fatal(err)
@@ -58,16 +58,52 @@ func main() {
 }
 ```
 
-### Field types
+### Type-specific methods
 
-The type of each field is determined by the zero-value you pass to `AddField`. Pass any Go value to define the field's type:
+For common Go types, dedicated methods are provided so you don't need to pass zero values:
 
 ```go
-builder.AddField("Text", "", "")           // string
-builder.AddField("Number", 0, "")          // int
-builder.AddField("Price", 0.0, "")         // float64
-builder.AddField("Flag", false, "")        // bool
-builder.AddField("Items", []string{}, "")  // []string
+builder.AddStringField("Name", `json:"name"`)     // string
+builder.AddIntField("Count", `json:"count"`)       // int
+builder.AddInt64Field("ID", `json:"id"`)           // int64
+builder.AddFloat64Field("Price", `json:"price"`)   // float64
+builder.AddBoolField("Active", `json:"active"`)    // bool
+builder.AddTimeField("CreatedAt", `json:"created_at"`)  // time.Time
+builder.AddSliceField("Tags", "", `json:"tags"`)   // []string (element type inferred from 2nd arg)
+builder.AddSliceField("Scores", 0, `json:"scores"`) // []int
+```
+
+Full list: `AddStringField`, `AddBoolField`, `AddIntField`, `AddInt8Field`, `AddInt16Field`, `AddInt32Field`, `AddInt64Field`, `AddUintField`, `AddUint8Field`, `AddUint16Field`, `AddUint32Field`, `AddUint64Field`, `AddFloat32Field`, `AddFloat64Field`, `AddTimeField`, `AddSliceField`.
+
+### Generic helper
+
+For any type not covered by the built-in methods, use the generic `AddTypedField` function:
+
+```go
+type Address struct {
+	City    string `json:"city"`
+	Country string `json:"country"`
+}
+
+b := dynamicstruct.NewBuilder()
+dynamicstruct.AddTypedField[string](b, "Name", `json:"name"`)
+dynamicstruct.AddTypedField[[]int](b, "Scores", `json:"scores"`)
+dynamicstruct.AddTypedField[time.Time](b, "CreatedAt", `json:"created_at"`)
+dynamicstruct.AddTypedField[Address](b, "Addr", `json:"addr"`)
+ds, err := b.Build()
+```
+
+Since Go does not support type parameters on methods, `AddTypedField` is a package-level function. It accepts any type via its type parameter, making it possible to add fields of custom structs, maps, or any other Go type.
+
+### Low-level AddField
+
+You can also use the general-purpose `AddField` method directly, passing a zero value of the desired type:
+
+```go
+builder.AddField("Name", "", `json:"name"`)           // string
+builder.AddField("Count", 0, `json:"count"`)          // int
+builder.AddField("Price", 0.0, `json:"price"`)        // float64
+builder.AddField("Items", []string{}, `json:"items"`) // []string
 ```
 
 ## API Reference
@@ -78,13 +114,36 @@ Creates a new `Builder` instance.
 
 ### `(*Builder) AddField(name string, typ any, tag string) *Builder`
 
-Adds a field to the struct definition. Returns the builder for method chaining.
+Adds a field to the struct definition. The field's type is inferred from the concrete type of `typ`. Returns the builder for method chaining.
 
 - `name` must be non-empty and exported (start with an uppercase letter).
 - `typ` determines the field's type by its concrete Go type. Must not be `nil`.
 - `tag` is the struct tag (e.g., `` `json:"name"` ``).
 
 Validation errors are accumulated and returned when `Build()` is called.
+
+### Type-specific methods
+
+All return `*Builder` for chaining. Signature: `(name string, tag string) *Builder`
+
+| Method | Field type |
+|--------|-----------|
+| `AddStringField` | `string` |
+| `AddBoolField` | `bool` |
+| `AddIntField` | `int` |
+| `AddInt8Field` ~ `AddInt64Field` | `int8` ~ `int64` |
+| `AddUintField` ~ `AddUint64Field` | `uint` ~ `uint64` |
+| `AddFloat32Field` | `float32` |
+| `AddFloat64Field` | `float64` |
+| `AddTimeField` | `time.Time` |
+
+### `(*Builder) AddSliceField(name string, elemTyp any, tag string) *Builder`
+
+Adds a slice field. The slice element type is inferred from `elemTyp`.
+
+### `AddTypedField[T any](b *Builder, name string, tag string) *Builder`
+
+Generic package-level function that adds a field of type `T`. Works with any Go type including custom structs, maps, and slices.
 
 ### `(*Builder) RemoveField(name string) *Builder`
 

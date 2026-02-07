@@ -6,6 +6,7 @@ import (
 	"go/token"
 	"reflect"
 	"sort"
+	"time"
 )
 
 // Builder builds a struct dynamically.
@@ -40,6 +41,106 @@ func (b *Builder) AddField(name string, typ any, tag string) *Builder {
 	}
 	b.fields[name] = &Field{Name: name, Type: typ, Tag: tag}
 	return b
+}
+
+// AddStringField adds a string field.
+func (b *Builder) AddStringField(name string, tag string) *Builder {
+	return b.AddField(name, "", tag)
+}
+
+// AddBoolField adds a bool field.
+func (b *Builder) AddBoolField(name string, tag string) *Builder {
+	return b.AddField(name, false, tag)
+}
+
+// AddIntField adds an int field.
+func (b *Builder) AddIntField(name string, tag string) *Builder {
+	return b.AddField(name, 0, tag)
+}
+
+// AddInt8Field adds an int8 field.
+func (b *Builder) AddInt8Field(name string, tag string) *Builder {
+	return b.AddField(name, int8(0), tag)
+}
+
+// AddInt16Field adds an int16 field.
+func (b *Builder) AddInt16Field(name string, tag string) *Builder {
+	return b.AddField(name, int16(0), tag)
+}
+
+// AddInt32Field adds an int32 field.
+func (b *Builder) AddInt32Field(name string, tag string) *Builder {
+	return b.AddField(name, int32(0), tag)
+}
+
+// AddInt64Field adds an int64 field.
+func (b *Builder) AddInt64Field(name string, tag string) *Builder {
+	return b.AddField(name, int64(0), tag)
+}
+
+// AddUintField adds a uint field.
+func (b *Builder) AddUintField(name string, tag string) *Builder {
+	return b.AddField(name, uint(0), tag)
+}
+
+// AddUint8Field adds a uint8 field.
+func (b *Builder) AddUint8Field(name string, tag string) *Builder {
+	return b.AddField(name, uint8(0), tag)
+}
+
+// AddUint16Field adds a uint16 field.
+func (b *Builder) AddUint16Field(name string, tag string) *Builder {
+	return b.AddField(name, uint16(0), tag)
+}
+
+// AddUint32Field adds a uint32 field.
+func (b *Builder) AddUint32Field(name string, tag string) *Builder {
+	return b.AddField(name, uint32(0), tag)
+}
+
+// AddUint64Field adds a uint64 field.
+func (b *Builder) AddUint64Field(name string, tag string) *Builder {
+	return b.AddField(name, uint64(0), tag)
+}
+
+// AddFloat32Field adds a float32 field.
+func (b *Builder) AddFloat32Field(name string, tag string) *Builder {
+	return b.AddField(name, float32(0), tag)
+}
+
+// AddFloat64Field adds a float64 field.
+func (b *Builder) AddFloat64Field(name string, tag string) *Builder {
+	return b.AddField(name, float64(0), tag)
+}
+
+// AddTimeField adds a time.Time field.
+func (b *Builder) AddTimeField(name string, tag string) *Builder {
+	return b.AddField(name, time.Time{}, tag)
+}
+
+// AddSliceField adds a slice field of the given element type.
+//
+//	builder.AddSliceField("Tags", "", `json:"tags"`) // []string
+//	builder.AddSliceField("Scores", 0, `json:"scores"`) // []int
+func (b *Builder) AddSliceField(name string, elemTyp any, tag string) *Builder {
+	if elemTyp == nil {
+		b.errs = append(b.errs, fmt.Errorf("field %q: slice element type must not be nil", name))
+		return b
+	}
+	sliceTyp := reflect.SliceOf(reflect.TypeOf(elemTyp))
+	return b.AddField(name, reflect.New(sliceTyp).Elem().Interface(), tag)
+}
+
+// AddTypedField adds a field whose type is determined by the type parameter T.
+// This is a generic helper that allows adding fields of any type without
+// explicitly passing a zero value.
+//
+//	dynamicstruct.AddTypedField[string](builder, "Name", `json:"name"`)
+//	dynamicstruct.AddTypedField[[]int](builder, "Scores", `json:"scores"`)
+//	dynamicstruct.AddTypedField[time.Time](builder, "CreatedAt", `json:"created_at"`)
+func AddTypedField[T any](b *Builder, name string, tag string) *Builder {
+	var zero T
+	return b.AddField(name, zero, tag)
 }
 
 // RemoveField deletes a field held in Builder.

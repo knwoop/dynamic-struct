@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestNewBuilder(t *testing.T) {
@@ -236,6 +237,157 @@ func TestBuilder_Validation_MultipleErrors(t *testing.T) {
 	}
 	if !strings.Contains(msg, "must not be nil") {
 		t.Errorf("expected nil type error in: %v", msg)
+	}
+}
+
+func TestBuilder_TypedFieldMethods(t *testing.T) {
+	ds, err := NewBuilder().
+		AddStringField("Name", `json:"name"`).
+		AddBoolField("Active", `json:"active"`).
+		AddIntField("Count", "").
+		AddInt8Field("I8", "").
+		AddInt16Field("I16", "").
+		AddInt32Field("I32", "").
+		AddInt64Field("I64", `json:"i64"`).
+		AddUintField("U", "").
+		AddUint8Field("U8", "").
+		AddUint16Field("U16", "").
+		AddUint32Field("U32", "").
+		AddUint64Field("U64", "").
+		AddFloat32Field("F32", "").
+		AddFloat64Field("F64", `json:"f64"`).
+		Build()
+	if err != nil {
+		t.Fatalf("Build() unexpected error: %v", err)
+	}
+
+	typ := ds.definition
+	if typ.NumField() != 14 {
+		t.Fatalf("expected 14 fields, got %d", typ.NumField())
+	}
+
+	// Verify types via JSON round-trip for a subset
+	instance := ds.New()
+	data := `{"name":"Test","active":true,"i64":42,"f64":3.14}`
+	if err := json.Unmarshal([]byte(data), instance); err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+
+	elem := reflect.ValueOf(instance).Elem()
+	if got := elem.FieldByName("Name").String(); got != "Test" {
+		t.Errorf("expected Name=Test, got %s", got)
+	}
+	if got := elem.FieldByName("Active").Bool(); got != true {
+		t.Errorf("expected Active=true, got %v", got)
+	}
+	if got := elem.FieldByName("I64").Int(); got != 42 {
+		t.Errorf("expected I64=42, got %d", got)
+	}
+	if got := elem.FieldByName("F64").Float(); got != 3.14 {
+		t.Errorf("expected F64=3.14, got %f", got)
+	}
+}
+
+func TestBuilder_AddTimeField(t *testing.T) {
+	ds, err := NewBuilder().
+		AddTimeField("CreatedAt", `json:"created_at"`).
+		Build()
+	if err != nil {
+		t.Fatalf("Build() unexpected error: %v", err)
+	}
+
+	instance := ds.New()
+	data := `{"created_at":"2024-01-15T10:30:00Z"}`
+	if err := json.Unmarshal([]byte(data), instance); err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+
+	elem := reflect.ValueOf(instance).Elem()
+	got := elem.FieldByName("CreatedAt").Interface().(time.Time)
+	expected := time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC)
+	if !got.Equal(expected) {
+		t.Errorf("expected CreatedAt=%v, got %v", expected, got)
+	}
+}
+
+func TestBuilder_AddSliceField(t *testing.T) {
+	ds, err := NewBuilder().
+		AddSliceField("Tags", "", `json:"tags"`).
+		AddSliceField("Scores", 0, `json:"scores"`).
+		Build()
+	if err != nil {
+		t.Fatalf("Build() unexpected error: %v", err)
+	}
+
+	instance := ds.New()
+	data := `{"tags":["go","test"],"scores":[100,200]}`
+	if err := json.Unmarshal([]byte(data), instance); err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+
+	elem := reflect.ValueOf(instance).Elem()
+
+	tags := elem.FieldByName("Tags")
+	if tags.Len() != 2 {
+		t.Fatalf("expected 2 tags, got %d", tags.Len())
+	}
+	if got := tags.Index(0).String(); got != "go" {
+		t.Errorf("expected tags[0]=go, got %s", got)
+	}
+
+	scores := elem.FieldByName("Scores")
+	if scores.Len() != 2 {
+		t.Fatalf("expected 2 scores, got %d", scores.Len())
+	}
+	if got := scores.Index(1).Int(); got != 200 {
+		t.Errorf("expected scores[1]=200, got %d", got)
+	}
+}
+
+func TestBuilder_AddSliceField_NilElem(t *testing.T) {
+	_, err := NewBuilder().
+		AddSliceField("Bad", nil, "").
+		Build()
+	if err == nil {
+		t.Fatal("expected error for nil slice element type")
+	}
+	if !strings.Contains(err.Error(), "slice element type must not be nil") {
+		t.Errorf("unexpected error message: %v", err)
+	}
+}
+
+func TestAddTypedField(t *testing.T) {
+	b := NewBuilder()
+	AddTypedField[string](b, "Name", `json:"name"`)
+	AddTypedField[int64](b, "Age", `json:"age"`)
+	AddTypedField[[]string](b, "Tags", `json:"tags"`)
+	AddTypedField[time.Time](b, "CreatedAt", `json:"created_at"`)
+
+	ds, err := b.Build()
+	if err != nil {
+		t.Fatalf("Build() unexpected error: %v", err)
+	}
+
+	instance := ds.New()
+	data := `{"name":"Alice","age":30,"tags":["a","b"],"created_at":"2024-01-15T10:30:00Z"}`
+	if err := json.Unmarshal([]byte(data), instance); err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+
+	elem := reflect.ValueOf(instance).Elem()
+	if got := elem.FieldByName("Name").String(); got != "Alice" {
+		t.Errorf("expected Name=Alice, got %s", got)
+	}
+	if got := elem.FieldByName("Age").Int(); got != 30 {
+		t.Errorf("expected Age=30, got %d", got)
+	}
+	tags := elem.FieldByName("Tags")
+	if tags.Len() != 2 {
+		t.Fatalf("expected 2 tags, got %d", tags.Len())
+	}
+	createdAt := elem.FieldByName("CreatedAt").Interface().(time.Time)
+	if createdAt.Year() != 2024 {
+		t.Errorf("expected year 2024, got %d", createdAt.Year())
 	}
 }
 
