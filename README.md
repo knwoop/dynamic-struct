@@ -137,34 +137,6 @@ All return `*Builder` for chaining. Signature: `(name string, tag string) *Build
 | `AddFloat64Field` | `float64` |
 | `AddTimeField` | `time.Time` |
 
-### `(*Builder) AddSliceField(name string, elemTyp any, tag string) *Builder`
-
-Adds a slice field. The slice element type is inferred from `elemTyp`.
-
-### `AddTypedField[T any](b *Builder, name string, tag string) *Builder`
-
-Generic package-level function that adds a field of type `T`. Works with any Go type including custom structs, maps, and slices.
-
-### `(*Builder) RemoveField(name string) *Builder`
-
-Removes a previously added field by name.
-
-### `(*Builder) HasField(name string) bool`
-
-Returns `true` if a field with the given name exists.
-
-### `(*Builder) GetField(name string) *Field`
-
-Returns the `Field` with the given name, or `nil` if not found.
-
-### `(*Builder) Build() (*DynamicStruct, error)`
-
-Builds the struct type definition. Fields are sorted by name for deterministic ordering. Returns an error if any validation errors were accumulated during `AddField` calls.
-
-### `(*DynamicStruct) New() any`
-
-Creates a new instance of the dynamic struct (returns a pointer).
-
 ## License
 
 [MIT](LICENSE)
